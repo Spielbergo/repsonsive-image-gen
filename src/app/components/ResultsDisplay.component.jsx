@@ -1,28 +1,51 @@
-'use client';
+ 'use client';
 
 import { useState, useEffect } from 'react';
+import styles from './ResultsDisplay.module.css';
 
-export default function ResultsDisplay({ result }) {
+export default function ResultsDisplay({ result, resultIndex, selectedImages: selectedImagesProp, onToggleSelection, onToggleSelectAll }) {
   const [directoryPath, setDirectoryPath] = useState('');
   const [generatedSrcset, setGeneratedSrcset] = useState('');
-  const [selectedImages, setSelectedImages] = useState(new Set());
-  
+  const [localSelectedImages, setLocalSelectedImages] = useState(new Set());
+
   if (!result) return null;
 
-  const { images, originalName, format, sizesAttr, metadata } = result;
+  const { images = [], originalName = 'image', format = 'jpg', sizesAttr = '' } = result;
 
-  // Initialize all images as selected when result changes
+  function mapLabelToSuffix(label) {
+    if (!label) return '';
+    const map = {
+      'small-mobile': 'mob-sm',
+      'mobile': 'mob',
+      'tablet': 'tablet',
+      'desktop': 'desktop',
+      'large': 'mob-lg'
+    };
+    if (map[label]) return map[label];
+    // Try to map numeric widths (e.g., '640' or '640x360') to nearest logical label
+    const numMatch = String(label).match(/(\d+)(?:x\d+)?$/);
+    if (numMatch) {
+      const w = parseInt(numMatch[1], 10);
+      if (w <= 360) return 'mob-sm';
+      if (w <= 480) return 'mob';
+      if (w <= 768) return 'tablet';
+      if (w <= 1366) return 'desktop';
+      return 'large';
+    }
+    return String(label).replace(/\s+/g, '-');
+  }
+
   useEffect(() => {
     const allIndices = new Set(images.map((_, index) => index));
-    setSelectedImages(allIndices);
-  }, [images]);
+    if (selectedImagesProp === undefined) setLocalSelectedImages(allIndices);
+  }, [images, selectedImagesProp]);
 
-  // Generate srcset whenever directoryPath changes
   useEffect(() => {
     const baseDir = directoryPath.trim() || 'images';
     const srcsetString = images
-      .map(img => {
-        const filename = `${originalName}-${img.width}x${img.height}.${format}`;
+      .map((img) => {
+        const suffix = mapLabelToSuffix(img.label || `${img.width}x${img.height}`);
+        const filename = `${originalName}-${suffix}.${format}`;
         const fullPath = `${baseDir}/${filename}`;
         return `${fullPath} ${img.width}w`;
       })
@@ -34,41 +57,40 @@ export default function ResultsDisplay({ result }) {
     const mimeType = format === 'webp' ? 'image/webp' : format === 'png' ? 'image/png' : 'image/jpeg';
     const link = document.createElement('a');
     link.href = `data:${mimeType};base64,${image.data}`;
-    link.download = `${originalName}-${image.width}x${image.height}.${format}`;
+    const suffix = mapLabelToSuffix(image.label || `${image.width}x${image.height}`);
+    link.download = `${originalName}-${suffix}.${format}`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   const handleDownloadAll = async () => {
-    if (selectedImages.size === 0) {
+    const sel = selectedImagesProp !== undefined ? selectedImagesProp : localSelectedImages;
+    if (!sel || sel.size === 0) {
       alert('Please select at least one image to download');
       return;
     }
 
     try {
-      // Dynamic import of JSZip
       const JSZip = (await import('jszip')).default;
       const zip = new JSZip();
 
-      // Add selected images to zip
-      images.forEach((image, index) => {
-        if (selectedImages.has(index)) {
-          const filename = `${originalName}-${image.width}x${image.height}.${format}`;
-          // Convert base64 to blob
-          const binaryData = atob(image.data);
-          const arrayBuffer = new Uint8Array(binaryData.length);
-          for (let i = 0; i < binaryData.length; i++) {
-            arrayBuffer[i] = binaryData.charCodeAt(i);
+      for (let i = 0; i < images.length; i++) {
+        if (sel.has(i)) {
+          const image = images[i];
+          const suffix = mapLabelToSuffix(image.label || `${image.width}x${image.height}`);
+          const filename = `${originalName}-${suffix}.${format}`;
+          const binaryString = atob(image.data);
+          const len = binaryString.length;
+          const bytes = new Uint8Array(len);
+          for (let j = 0; j < len; j++) {
+            bytes[j] = binaryString.charCodeAt(j);
           }
-          zip.file(filename, arrayBuffer);
+          zip.file(filename, bytes);
         }
-      });
+      }
 
-      // Generate zip file
       const content = await zip.generateAsync({ type: 'blob' });
-      
-      // Download zip
       const link = document.createElement('a');
       link.href = URL.createObjectURL(content);
       link.download = `${originalName}-responsive-images.zip`;
@@ -83,35 +105,43 @@ export default function ResultsDisplay({ result }) {
   };
 
   const toggleImageSelection = (index) => {
-    setSelectedImages(prev => {
+    if (onToggleSelection) {
+      onToggleSelection(resultIndex, index);
+      return;
+    }
+    setLocalSelectedImages((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(index)) {
-        newSet.delete(index);
-      } else {
-        newSet.add(index);
-      }
+      if (newSet.has(index)) newSet.delete(index);
+      else newSet.add(index);
       return newSet;
     });
   };
 
   const deselectAll = () => {
-    setSelectedImages(new Set());
+    if (onToggleSelectAll) {
+      onToggleSelectAll(resultIndex, false);
+      return;
+    }
+    setLocalSelectedImages(new Set());
   };
 
   const selectAll = () => {
+    if (onToggleSelectAll) {
+      onToggleSelectAll(resultIndex, true);
+      return;
+    }
     const allIndices = new Set(images.map((_, index) => index));
-    setSelectedImages(allIndices);
+    setLocalSelectedImages(allIndices);
   };
 
   const toggleSelectAll = () => {
-    if (selectedImages.size === images.length) {
-      deselectAll();
-    } else {
-      selectAll();
-    }
+    const sel = selectedImagesProp !== undefined ? selectedImagesProp : localSelectedImages;
+    if (sel.size === images.length) deselectAll();
+    else selectAll();
   };
 
-  const allSelected = selectedImages.size === images.length;
+  const selSet = selectedImagesProp !== undefined ? selectedImagesProp : localSelectedImages;
+  const allSelected = selSet.size === images.length;
 
   const copySrcset = () => {
     const fullSrcsetCode = `srcset="${generatedSrcset}" sizes="${sizesAttr}"`;
@@ -120,69 +150,71 @@ export default function ResultsDisplay({ result }) {
   };
 
   const formatFileSize = (bytes) => {
+    if (!bytes) return '—';
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
   return (
-    <div className="results-container">
-      <div className="results-header">
+    <div className={styles.resultsContainer} id={`result-${resultIndex}`}>
+      <h3 className={styles.originalName}>{originalName}</h3>
+      <div className={styles.resultsHeader}>
         <h2>Generated Images</h2>
-        <div className="header-actions">
-          <button className="btn-secondary" onClick={toggleSelectAll}>
+        <div className={styles.headerActions}>
+          <button className={styles.btnSecondary} onClick={toggleSelectAll}>
             {allSelected ? 'Deselect All' : 'Select All'}
           </button>
-          <button className="btn-primary" onClick={handleDownloadAll}>
-            Download Selected ({selectedImages.size})
+          <button className={styles.btnPrimary} onClick={handleDownloadAll}>
+            Download Selected ({selSet.size})
           </button>
         </div>
       </div>
 
-      <div className="srcset-section">
+      <div className={styles.srcsetSection}>
         <h3>Directory Path (optional)</h3>
-        <div className="directory-input-group">
+        <div className={styles.directoryInputGroup}>
           <input
             type="text"
             placeholder="e.g., https://example.com/wp-content/uploads/2025/10 or images"
             value={directoryPath}
             onChange={(e) => setDirectoryPath(e.target.value)}
-            className="directory-input"
+            className={styles.directoryInput}
           />
-          <p className="input-hint">Leave empty to use "images" as default</p>
+          <p className={styles.inputHint}>Leave empty to use "images" as default</p>
         </div>
-        
+
         <h3>Srcset Code</h3>
-        <div className="code-block">
+        <div className={styles.codeBlock}>
           <code>srcset="{generatedSrcset}" sizes="{sizesAttr}"</code>
         </div>
-        <button className="btn-secondary" onClick={copySrcset}>
+        <button className={styles.btnSecondary} onClick={copySrcset}>
           Copy to Clipboard
         </button>
       </div>
 
-      <div className="images-grid">
+      <div className={styles.imagesGrid}>
         {images.map((image, index) => (
-          <div key={image.width} className={`image-card ${selectedImages.has(index) ? 'selected' : ''}`}>
-            <div className="selection-overlay">
+          <div key={image.width + '-' + index} className={`${styles.imageCard} ${selSet.has(index) ? styles.imageCardSelected : ''}`}>
+            <div className={styles.selectionOverlay}>
               <input
                 type="checkbox"
-                checked={selectedImages.has(index)}
+                checked={selSet.has(index)}
                 onChange={() => toggleImageSelection(index)}
-                className="image-checkbox"
+                className={styles.imageCheckbox}
               />
             </div>
-            <div className="image-preview">
-              <img 
-                src={`data:image/${format === 'png' ? 'png' : format === 'webp' ? 'webp' : 'jpeg'};base64,${image.data}`} 
+            <div className={styles.imagePreview}>
+              <img
+                src={`data:image/${format === 'png' ? 'png' : format === 'webp' ? 'webp' : 'jpeg'};base64,${image.data}`}
                 alt={`${image.width}x${image.height}`}
               />
             </div>
-            <div className="image-info">
-              <h4>{image.width}x{image.height}</h4>
-              <p className="file-size">{formatFileSize(image.size)}</p>
-              <button 
-                className="btn-download"
+            <div className={styles.imageInfo}>
+              <h4>{`${originalName}-${mapLabelToSuffix(image.label || `${image.width}x${image.height}`)}`}</h4>
+              <p className={styles.fileSize}>{formatFileSize(image.size)} — {image.width}×{image.height}</p>
+              <button
+                className={styles.btnDownload}
                 onClick={() => handleDownload(image)}
               >
                 Download
@@ -191,211 +223,7 @@ export default function ResultsDisplay({ result }) {
           </div>
         ))}
       </div>
-
-      <style jsx>{`
-        .results-container {
-          width: 100%;
-          max-width: 1200px;
-          margin: 40px auto;
-          padding: 0 20px;
-        }
-
-        .results-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
-        }
-
-        .results-header h2 {
-          margin: 0;
-          font-size: 24px;
-          color: #333;
-        }
-
-        .header-actions {
-          display: flex;
-          gap: 12px;
-        }
-
-        .srcset-section {
-          background: #f8f9fa;
-          padding: 20px;
-          border-radius: 8px;
-          margin-bottom: 32px;
-        }
-
-        .srcset-section h3 {
-          margin: 0 0 12px 0;
-          font-size: 18px;
-          color: #333;
-        }
-
-        .srcset-section h3:not(:first-child) {
-          margin-top: 24px;
-        }
-
-        .directory-input-group {
-          margin-bottom: 24px;
-        }
-
-        .directory-input {
-          width: 100%;
-          padding: 12px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          font-size: 14px;
-          font-family: 'Courier New', monospace;
-        }
-
-        .directory-input:focus {
-          outline: none;
-          border-color: #0070f3;
-        }
-
-        .input-hint {
-          margin: 8px 0 0 0;
-          font-size: 13px;
-          color: #666;
-          font-style: italic;
-        }
-
-        .code-block {
-          background: white;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          padding: 16px;
-          margin-bottom: 12px;
-          overflow-x: auto;
-        }
-
-        .code-block code {
-          font-family: 'Courier New', monospace;
-          font-size: 13px;
-          color: #d63384;
-          word-break: break-all;
-        }
-
-        .images-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-          gap: 20px;
-        }
-
-        .image-card {
-          background: white;
-          border: 1px solid #e0e0e0;
-          border-radius: 8px;
-          overflow: hidden;
-          transition: all 0.3s ease;
-          position: relative;
-        }
-
-        .image-card.selected {
-          border-color: #0070f3;
-          box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.1);
-        }
-
-        .image-card:hover {
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .selection-overlay {
-          position: absolute;
-          top: 12px;
-          left: 12px;
-          z-index: 10;
-        }
-
-        .image-checkbox {
-          width: 20px;
-          height: 20px;
-          cursor: pointer;
-          accent-color: #0070f3;
-        }
-
-        .image-preview {
-          width: 100%;
-          height: 200px;
-          background: #f5f5f5;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-        }
-
-        .image-preview img {
-          max-width: 100%;
-          max-height: 100%;
-          object-fit: contain;
-        }
-
-        .image-info {
-          padding: 16px;
-        }
-
-        .image-info h4 {
-          margin: 0 0 4px 0;
-          font-size: 16px;
-          color: #333;
-        }
-
-        .file-size {
-          margin: 0 0 12px 0;
-          font-size: 14px;
-          color: #666;
-        }
-
-        .btn-primary {
-          background: #0070f3;
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          border-radius: 6px;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: background 0.2s ease;
-        }
-
-        .btn-primary:hover {
-          background: #0051cc;
-        }
-
-        .btn-secondary {
-          background: white;
-          color: #0070f3;
-          border: 1px solid #0070f3;
-          padding: 8px 16px;
-          border-radius: 6px;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .btn-secondary:hover {
-          background: #0070f3;
-          color: white;
-        }
-
-        .btn-download {
-          width: 100%;
-          background: #f8f9fa;
-          color: #333;
-          border: 1px solid #ddd;
-          padding: 8px 16px;
-          border-radius: 4px;
-          font-size: 14px;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .btn-download:hover {
-          background: #e9ecef;
-          border-color: #adb5bd;
-        }
-      `}</style>
     </div>
   );
 }
+

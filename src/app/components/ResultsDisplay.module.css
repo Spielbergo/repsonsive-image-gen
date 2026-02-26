@@ -1,0 +1,140 @@
+.resultsContainer {
+  width: 100%;
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.originalName {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111;
+  margin: 0 0 12px 0;
+  text-align: left;
+  max-width: 1200px;
+  letter-spacing: 0.4px;
+  text-transform: capitalize;
+}
+
+.resultsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.resultsHeader h2 {
+  margin: 0;
+  font-size: 24px;
+  color: #333;
+}
+
+.headerActions { display: flex; gap: 12px; }
+
+.srcsetSection {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 32px;
+}
+
+.srcsetSection h3 { margin: 0 0 12px 0; font-size: 18px; color: #333; }
+
+.directoryInputGroup { margin-bottom: 24px; }
+
+.directoryInput {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: 'Courier New', monospace;
+}
+
+.directoryInput:focus { outline: none; border-color: #0070f3; }
+
+.inputHint { margin: 8px 0 0 0; font-size: 13px; color: #666; font-style: italic; }
+
+.codeBlock {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 16px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+}
+
+.codeBlock code {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: #d63384;
+  word-break: break-all;
+}
+
+.imagesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.imageCard {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.imageCardSelected {
+  border-color: #0070f3;
+  box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.1);
+}
+
+.imageCard:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+
+.selectionOverlay { position: absolute; top: 12px; left: 12px; z-index: 10; }
+
+.imageCheckbox { width: 20px; height: 20px; cursor: pointer; accent-color: #0070f3; }
+
+.imagePreview { width: 100%; height: 200px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+.imagePreview img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+.imageInfo { padding: 16px; }
+
+.imageInfo h4 { margin: 0 0 4px 0; font-size: 16px; color: #333; }
+
+.fileSize { margin: 0 0 12px 0; font-size: 14px; color: #666; }
+
+.btnPrimary {
+  background: #0070f3;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btnPrimary:hover { background: #0051cc; }
+
+.btnSecondary {
+  background: white;
+  color: #0070f3;
+  border: 1px solid #0070f3;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btnSecondary:hover { background: #0070f3; color: white; }
+
+.btnDownload { width: 100%; background: #f8f9fa; color: #333; border: 1px solid #ddd; padding: 8px 16px; border-radius: 4px; font-size: 14px; cursor: pointer; transition: all 0.2s ease; }
+
+.btnDownload:hover { background: #e9ecef; border-color: #adb5bd; }
