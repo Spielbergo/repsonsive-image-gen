@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import ImageUploader from './components/ImageUploader';
-import ResultsDisplay from './components/ResultsDisplay';
+import ImageUploader from './components/ImageUploader.component';
+import ResultsDisplay from './components/ResultsDisplay.component';
 
 export default function Home() {
   const [result, setResult] = useState(null);
