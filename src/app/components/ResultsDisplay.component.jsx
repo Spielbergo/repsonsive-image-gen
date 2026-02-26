@@ -17,6 +17,7 @@ export default function ResultsDisplay({ result, resultIndex, selectedImages: se
     const map = {
       'small-mobile': 'mob-sm',
       'mobile': 'mob',
+      'card': 'card',
       'tablet': 'tablet',
       'desktop': 'desktop',
       'large': 'mob-lg'

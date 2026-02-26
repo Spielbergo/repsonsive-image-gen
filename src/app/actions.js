@@ -9,6 +9,7 @@ const RESPONSIVE_WIDTHS = [320, 480, 640, 768, 1024, 1366, 1536, 1920];
 const SIZE_LABELS = {
   'small-mobile': 320,
   'mobile': 480,
+  'card': 640,
   'tablet': 768,
   'desktop': 1024,
   'large': 1536

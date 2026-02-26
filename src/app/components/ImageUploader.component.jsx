@@ -8,7 +8,7 @@ export default function ImageUploader({ onImageProcess }) {
   const [previews, setPreviews] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [format, setFormat] = useState('webp');
-  const allSizes = ['small-mobile','mobile','tablet','desktop','large'];
+  const allSizes = ['small-mobile','mobile','card','tablet','desktop','large'];
   const [selectedSizes, setSelectedSizes] = useState(new Set(allSizes));
   const [mode, setMode] = useState('full'); // 'full' or 'streamlined'
   const fileInputRef = useRef(null);
@@ -162,12 +162,12 @@ export default function ImageUploader({ onImageProcess }) {
           >
             Full set
           </button>
-          <button
+            <button
             type="button"
             className={`${styles.modeBtn} ${mode === 'streamlined' ? styles.active : ''}`}
             onClick={() => {
               setMode('streamlined');
-              setSelectedSizes(new Set(['mobile','tablet']));
+              setSelectedSizes(new Set(['mobile','tablet','card']));
             }}
           >
             Streamlined

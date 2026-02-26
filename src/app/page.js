@@ -16,6 +16,7 @@ export default function Home() {
     const map = {
       'small-mobile': 'mob-sm',
       'mobile': 'mob',
+      'card': 'card',
       'tablet': 'tablet',
       'desktop': 'desktop',
       'large': 'mob-lg'
