@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ImageUploader from './components/ImageUploader.component';
 import ResultsDisplay from './components/ResultsDisplay.component';
@@ -150,6 +150,18 @@ export default function Home() {
     }
   };
 
+  // Scroll-to-top button visibility
+  const [showScroll, setShowScroll] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setShowScroll(window.scrollY > 300);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className={pageStyles.container}>
       <header className={pageStyles.header}>
@@ -235,6 +247,21 @@ export default function Home() {
       <footer className={pageStyles.footer}>
         <p>@ 2026 - SrcSetify - Built with Next.js and Sharp - <Link href="https://webcheddar.ca" target="_blank" rel="noopener noreferrer">A Web Cheddar project</Link></p>
       </footer>
+
+      <button
+        className={`${pageStyles.scrollTop} ${showScroll ? pageStyles.visible : ''}`}
+        onClick={scrollToTop}
+        aria-label="Scroll to top"
+      >
+        ↑
+      </button>
+      <button
+        className={`${pageStyles.uploadBottom} ${showScroll ? pageStyles.visible : ''}`}
+        onClick={handleReset}
+        aria-label="Upload new image"
+      >
+        ⬆ Upload
+      </button>
 
       
     </div>
